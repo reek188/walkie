@@ -5,7 +5,7 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
 const app = express();
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { dotfiles: 'allow' })); // dotfiles: lets /.well-known/ be served (needed for the Android app)
 
 // If key.pem + cert.pem exist, serve HTTPS (needed for mic access from other devices on your LAN)
 const useHttps = fs.existsSync('key.pem') && fs.existsSync('cert.pem');
