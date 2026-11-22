@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Walkie</title>
+<style>
+  :root {
+    --ink:#4a4458; --muted:#8b84a0;
+    --lav:#c4b5fd; --pink:#f9a8d4; --mint:#86efac; --sky:#a5d8ff; --peach:#fed7aa;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+    font-family: "Inter", "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 20%, #e9ddff 0, transparent 45%),
+      radial-gradient(circle at 85% 15%, #ffdbe9 0, transparent 40%),
+      radial-gradient(circle at 80% 90%, #d3f5e6 0, transparent 45%),
+      radial-gradient(circle at 10% 90%, #d6ebff 0, transparent 40%),
+      #f7f3ff;
+  }
+  .card {
+    width:min(94vw,400px); padding:32px 26px 26px; text-align:center;
+    background:rgba(255,255,255,.62); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.9); border-radius:32px;
+    box-shadow:0 24px 70px rgba(160,140,210,.28);
+  }
+  .logo { font-size:34px; margin-bottom:4px; }
+  h1 { margin:0 0 4px; font-size:24px; font-weight:700; letter-spacing:-.3px; }
+  .sub { margin:0 0 22px; color:var(--muted); font-size:14px; }
+
+  input {
+    width:100%; padding:15px 18px; border-radius:18px; border:2px solid transparent; outline:0;
+    background:#fff; color:var(--ink); font-size:16px; text-align:center; margin-bottom:12px;
+    box-shadow:0 4px 14px rgba(160,140,210,.15); transition:border-color .15s, box-shadow .15s;
+  }
+  input::placeholder { color:#b5aec8; }
+  input:focus { border-color:var(--lav); box-shadow:0 4px 18px rgba(167,139,250,.3); }
+  button.join {
+    width:100%; padding:15px; border:0; border-radius:18px; cursor:pointer; font-size:16px; font-weight:600;
+    color:#4a3b7a; background:linear-gradient(135deg,var(--lav),var(--pink));
+    box-shadow:0 8px 20px rgba(196,181,253,.55); transition:transform .1s, box-shadow .1s;
+  }
+  button.join:active { transform:scale(.98); }
+
+  #status {
+    display:inline-flex; align-items:center; gap:8px; max-width:100%; min-height:40px; padding:9px 18px;
+    border-radius:999px; font-size:14px; font-weight:600; margin-bottom:26px;
+    background:#efeafc; color:#7c7494; transition:background .2s, color .2s;
+  }
+  #status::before { content:""; width:9px; height:9px; border-radius:50%; background:currentColor; opacity:.6; flex:none; }
+  #status.live { background:#d5f5e5; color:#2f8a5f; }
+  #status.live::before { opacity:1; animation:blink 1s infinite; }
+  #status.me { background:#fff0c9; color:#a0702a; }
+  #status.me::before { opacity:1; animation:blink .8s infinite; }
+  @keyframes blink { 50% { opacity:.25; } }
+
+  .ptt-wrap { display:flex; justify-content:center; margin-bottom:14px; }
+  #ptt {
+    width:190px; height:190px; border-radius:50%; border:0; cursor:pointer; color:#4a3b7a;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    font-size:15px; font-weight:700; letter-spacing:.8px; touch-action:none; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(145deg,#d9ccff,#fbc2de);
+    box-shadow:0 14px 34px rgba(196,181,253,.65), inset 0 -6px 14px rgba(255,255,255,.45), inset 0 6px 14px rgba(255,255,255,.7);
+    transition:transform .08s, background .2s, box-shadow .2s;
+  }
+  #ptt svg { width:44px; height:44px; }
+  #ptt.down {
+    transform:scale(.95); color:#1f6a52; background:linear-gradient(145deg,#b7f5d3,#a5e8f0);
+    box-shadow:0 0 0 0 rgba(134,239,172,.6), inset 0 6px 16px rgba(255,255,255,.6);
+    animation:ring 1.2s infinite;
+  }
+  @keyframes ring { 0% { box-shadow:0 0 0 0 rgba(134,239,172,.65); } 100% { box-shadow:0 0 0 30px rgba(134,239,172,0); } }
+  .hint { color:var(--muted); font-size:13px; margin-bottom:22px; }
+  kbd { background:#fff; padding:2px 8px; border-radius:8px; font:inherit; font-size:12px; box-shadow:0 2px 0 #e4def5; }
+
+  .users-title { font-size:12px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  #users { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+  .chip {
+    display:flex; align-items:center; gap:8px; padding:5px 12px 5px 5px; border-radius:999px; background:#fff;
+    font-size:13px; font-weight:600; box-shadow:0 3px 10px rgba(160,140,210,.14); transition:box-shadow .2s, transform .2s;
+  }
+  .chip i {
+    width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-style:normal; font-size:12px; font-weight:700; color:#4a4458;
+  }
+  .chip.speaking { transform:scale(1.05); box-shadow:0 0 0 3px #b7f5d3, 0 4px 14px rgba(134,239,172,.5); }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">📻</div>
+  <h1>Walkie</h1>
+
+  <div id="join">
+    <p class="sub">Pick a name and start talking</p>
+    <input id="name" placeholder="Your name" maxlength="24" autocomplete="off">
+    <button class="join" id="joinBtn">Join channel</button>
+  </div>
+
+  <div id="main" class="hidden">
+    <p class="sub">Hold the button to talk</p>
+    <div id="status">Idle</div>
+    <div class="ptt-wrap">
+      <button id="ptt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
+        </svg>
+        HOLD TO TALK
+      </button>
+    </div>
+    <div class="hint">or hold <kbd>Space</kbd></div>
+    <div class="users-title">Online</div>
+    <div id="users"></div>
+  </div>
+</div>
+
+<script>
+// Later, when the server is hosted elsewhere (Netlify can't run WebSockets), set this to e.g.
+// 'wss://your-server.onrender.com'. Empty = same host that served this page.
+const SERVER_URL = '';
+
+const RATE = 16000;            // audio sent over the wire (mono, 16-bit PCM)
+const $ = (id) => document.getElementById(id);
+const PASTELS = ['#c4b5fd', '#f9a8d4', '#86efac', '#a5d8ff', '#fed7aa', '#fde68a', '#99f6e4'];
+let ws, ctx, myName = '', talking = false, wantTalk = false, myId = -1, nextTimes = {},
+    speakers = [], userList = [], prevIds = new Set(), pending = [], pendingLen = 0;
+
+$('joinBtn').onclick = join;
+$('name').addEventListener('keydown', (e) => e.key === 'Enter' && join());
+
+async function join() {
+  const name = $('name').value.trim();
+  if (!name) return $('name').focus();
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 }
+    });
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
+    await setupCapture(stream);
+  } catch (err) {
+    return alert('Microphone access is needed (and requires https or localhost).\n' + err.message);
+  }
+
+  const url = SERVER_URL || (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+  ws = new WebSocket(url);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'join', name }));
+  ws.onmessage = onMessage;
+  ws.onclose = () => setStatus('Disconnected — refresh to reconnect', '');
+}
+
+async function setupCapture(stream) {
+  const code = `class Cap extends AudioWorkletProcessor {
+    process(inputs) { const ch = inputs[0][0]; if (ch) this.port.postMessage(ch.slice()); return true; }
+  } registerProcessor('cap', Cap);`;
+  const blobUrl = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+  await ctx.audioWorklet.addModule(blobUrl);
+
+  const src = ctx.createMediaStreamSource(stream);
+  const node = new AudioWorkletNode(ctx, 'cap');
+  node.port.onmessage = (e) => {
+    if (!talking) return;
+    pending.push(e.data); pendingLen += e.data.length;
+    if (pendingLen >= 2048) flush();
+  };
+  src.connect(node); // not connected to destination, so you never hear yourself
+}
+
+function flush() {
+  const buf = new Float32Array(pendingLen);
+  let o = 0; for (const c of pending) { buf.set(c, o); o += c.length; }
+  pending = []; pendingLen = 0;
+
+  const ratio = ctx.sampleRate / RATE, n = Math.floor(buf.length / ratio), out = new Int16Array(n);
+  for (let i = 0; i < n; i++) {
+    const s = Math.floor(i * ratio), e = Math.max(s + 1, Math.floor((i + 1) * ratio));
+    let sum = 0; for (let j = s; j < e && j < buf.length; j++) sum += buf[j];
+    const v = Math.max(-1, Math.min(1, sum / (e - s)));
+    out[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+  }
+  if (ws.readyState === 1) ws.send(out.buffer);
+}
+
+// Soft "radio click" beeps: rising two-tone = someone started, single low tone = someone stopped
+function tone(freq, when, dur) {
+  const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + when;
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.18, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function beepStart() { if (!ctx) return; tone(880, 0, 0.09); tone(1320, 0.09, 0.11); }
+function beepEnd()   { if (!ctx) return; tone(620, 0, 0.14); }
+
+function play(arrayBuf) {
+  const id = new Uint8Array(arrayBuf)[0];            // first byte = sender id
+  const i16 = new Int16Array(arrayBuf.slice(1)), f = new Float32Array(i16.length);
+  for (let i = 0; i < i16.length; i++) f[i] = i16[i] / 32768;
+  const ab = ctx.createBuffer(1, f.length, RATE);
+  ab.copyToChannel(f, 0);
+  const s = ctx.createBufferSource();
+  s.buffer = ab; s.connect(ctx.destination);          // browser mixes overlapping voices
+  const now = ctx.currentTime;
+  let t = nextTimes[id] || 0;                         // each speaker has their own playback clock
+  if (t < now + 0.03) t = now + 0.1;                  // small jitter buffer
+  s.start(t); nextTimes[id] = t + ab.duration;
+}
+
+function render() {
+  const me = speakers.some((s) => s.id === myId);
+  const others = speakers.filter((s) => s.id !== myId).map((s) => s.name);
+  if (me && others.length) setStatus('You + ' + others.join(', ') + ' speaking', 'me');
+  else if (me) setStatus('You are speaking…', 'me');
+  else if (others.length) setStatus(others.join(', ') + (others.length > 1 ? ' are' : ' is') + ' speaking', 'live');
+  else setStatus('Idle', '');
+  renderUsers();
+}
+
+function renderUsers() {
+  const talkingNames = new Set(speakers.map((s) => s.name));
+  $('users').innerHTML = '';
+  userList.forEach((name) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (talkingNames.has(name) ? ' speaking' : '');
+    let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const av = document.createElement('i');
+    av.style.background = PASTELS[h % PASTELS.length];
+    av.textContent = name.trim().charAt(0).toUpperCase();
+    const label = document.createElement('span');
+    label.textContent = name;                        // textContent: names can't inject HTML
+    chip.append(av, label);
+    $('users').appendChild(chip);
+  });
+}
+
+function onMessage(e) {
+  if (typeof e.data !== 'string') return play(e.data);
+  const m = JSON.parse(e.data);
+  if (m.type === 'joined') {
+    myName = m.name; myId = m.id;
+    $('join').classList.add('hidden'); $('main').classList.remove('hidden');
+    render();
+  } else if (m.type === 'users') {
+    userList = m.users; renderUsers();
+  } else if (m.type === 'speakers') {
+    const ids = new Set(m.speakers.map((s) => s.id));
+    const someoneStarted = [...ids].some((id) => id !== myId && !prevIds.has(id));
+    const someoneStopped = [...prevIds].some((id) => id !== myId && !ids.has(id));
+    if (someoneStarted) beepStart(); else if (someoneStopped) beepEnd();
+    prevIds = ids; speakers = m.speakers; render();
+  } else if (m.type === 'granted') {
+    if (wantTalk) talking = true;
+    else ws.send(JSON.stringify({ type: 'stop' }));   // released before grant arrived
+  }
+}
+
+function setStatus(text, cls) { const s = $('status'); s.textContent = text; s.className = cls; }
+
+function startTalk() {
+  if (wantTalk || !ws || ws.readyState !== 1) return;
+  wantTalk = true; $('ptt').classList.add('down');
+  beepStart();                                        // instant feedback for yourself
+  ws.send(JSON.stringify({ type: 'start' }));
+}
+function stopTalk() {
+  if (!wantTalk) return;
+  wantTalk = false; $('ptt').classList.remove('down');
+  if (talking) { if (pendingLen) flush(); talking = false; }
+  beepEnd();
+  ws.send(JSON.stringify({ type: 'stop' }));
+}
+
+const btn = $('ptt');
+btn.addEventListener('pointerdown', (e) => { btn.setPointerCapture(e.pointerId); startTalk(); });
+btn.addEventListener('pointerup', stopTalk);
+btn.addEventListener('pointercancel', stopTalk);
+btn.addEventListener('contextmenu', (e) => e.preventDefault());
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !e.repeat && !$('main').classList.contains('hidden')) { e.preventDefault(); startTalk(); }
+});
+window.addEventListener('keyup', (e) => { if (e.code === 'Space') stopTalk(); });
+</script>
+</body>
+</html>
