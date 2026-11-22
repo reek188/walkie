@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Walkie</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#d9ccff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Walkie">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png">
 <style>
   :root {
     --ink:#4a4458; --muted:#8b84a0;
@@ -128,6 +135,15 @@ const PASTELS = ['#c4b5fd', '#f9a8d4', '#86efac', '#a5d8ff', '#fed7aa', '#fde68a
 let ws, ctx, myName = '', talking = false, wantTalk = false, myId = -1, nextTimes = {},
     speakers = [], userList = [], prevIds = new Set(), pending = [], pendingLen = 0;
 
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+// Keep the screen awake while the app is open (phones pause audio when the screen locks)
+let wakeLock = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ws) keepAwake(); });
+
 $('joinBtn').onclick = join;
 $('name').addEventListener('keydown', (e) => e.key === 'Enter' && join());
 
@@ -147,6 +163,7 @@ async function join() {
   }
 
   const url = SERVER_URL || (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+  keepAwake();
   ws = new WebSocket(url);
   ws.binaryType = 'arraybuffer';
   ws.onopen = () => ws.send(JSON.stringify({ type: 'join', name }));
